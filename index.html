@@ -7,7 +7,7 @@
   </head>
   <body style="text-align: center; padding: 0; border: 0; margin: 0;">
     <canvas id="unity-canvas" width=414 height=896 tabindex="-1" style="width: 414px; height: 896px; background: #231F20"></canvas>
-    <script src="Build/v2.loader.js"></script>
+    <script src="Build/telegram-game.loader.js"></script>
     <script>
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         // Mobile device style: fill the whole browser client area with the game canvas:
@@ -27,9 +27,9 @@
 
       createUnityInstance(document.querySelector("#unity-canvas"), {
         arguments: [],
-        dataUrl: "Build/v2.data",
-        frameworkUrl: "Build/v2.framework.js",
-        codeUrl: "Build/v2.wasm",
+        dataUrl: "Build/telegram-game.data",
+        frameworkUrl: "Build/telegram-game.framework.js",
+        codeUrl: "Build/telegram-game.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "telegramTest",
