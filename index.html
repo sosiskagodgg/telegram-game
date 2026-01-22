@@ -1,212 +1,45 @@
 <!DOCTYPE html>
 <html lang="en-us">
-<head>
+  <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Telegram Clicker</title>
-    
-    <!-- Telegram Web App SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <style>
-        * { margin: 0; padding: 0; border: 0; }
-        body { 
-            text-align: center; 
-            background: #000; 
-            padding: 0;
-            border: 0; 
-            margin: 0;
-        }
-        #unity-canvas { 
-            background: #231F20; 
-        }
-        #debug {
-            color: white;
-            font-family: monospace;
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
-            font-size: 12px;
-        }
-    </style>
-</head>
-<body style="text-align: center; padding: 0; border: 0; margin: 0;">
-    <div id="debug">Debug info will appear here</div>
-    <canvas id="unity-canvas" width="414" height="896" tabindex="-1" 
-            style="width: 414px; height: 896px; background: #231F20; display: block;"></canvas>
-    
+    <title>Unity Web Player | telegramTest</title>
+  </head>
+  <body style="text-align: center; padding: 0; border: 0; margin: 0;">
+    <canvas id="unity-canvas" width=414 height=896 tabindex="-1" style="width: 414px; height: 896px; background: #231F20"></canvas>
     <script src="Build/telegram-game.loader.js"></script>
     <script>
-        let unityInstance = null;
-        let telegramUserId = "-1";
-        let debugDiv = document.getElementById('debug');
-        
-        // Функция для обновления дебаг информации
-        function updateDebug(msg) {
-            debugDiv.innerHTML += msg + '<br>';
-            console.log(msg);
-        }
-        
-        updateDebug('Page loading...');
-        
-        // Настройка для мобильных
-        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-            var meta = document.createElement('meta');
-            meta.name = 'viewport';
-            meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-            document.head.appendChild(meta);
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // Mobile device style: fill the whole browser client area with the game canvas:
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
 
-            var canvas = document.getElementById('unity-canvas');
-            canvas.style.width = "100%";
-            canvas.style.height = "100%";
-            canvas.style.position = "fixed";
-            document.body.style.textAlign = "left";
-        }
-        
-        // Функция для получения ID пользователя
-        function getTelegramUserId() {
-            updateDebug('Checking for Telegram ID...');
-            
-            // Отладка: что есть в Telegram
-            updateDebug('Telegram exists: ' + (typeof Telegram !== 'undefined'));
-            updateDebug('Telegram.WebApp: ' + (Telegram?.WebApp ? 'YES' : 'NO'));
-            
-            if (window.Telegram && Telegram.WebApp) {
-                updateDebug('initData: ' + (Telegram.WebApp.initData ? 'YES' : 'NO'));
-                updateDebug('initDataUnsafe: ' + (Telegram.WebApp.initDataUnsafe ? 'YES' : 'NO'));
-                
-                // Способ 1: Ищем user в initDataUnsafe
-                if (Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-                    telegramUserId = Telegram.WebApp.initDataUnsafe.user.id;
-                    updateDebug('Found Telegram ID in initDataUnsafe: ' + telegramUserId);
-                    return telegramUserId.toString();
-                }
-                
-                // Способ 2: Пробуем парсить initData
-                if (Telegram.WebApp.initData) {
-                    try {
-                        const params = new URLSearchParams(Telegram.WebApp.initData);
-                        const userStr = params.get('user');
-                        if (userStr) {
-                            const user = JSON.parse(userStr);
-                            telegramUserId = user.id;
-                            updateDebug('Found Telegram ID in initData: ' + telegramUserId);
-                            return telegramUserId.toString();
-                        }
-                    } catch (e) {
-                        updateDebug('Error parsing initData: ' + e.message);
-                    }
-                }
-            }
-            
-            // Способ 3: Из URL параметров
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlId = urlParams.get('user_id');
-            if (urlId) {
-                telegramUserId = urlId;
-                updateDebug('Found ID in URL: ' + telegramUserId);
-                return telegramUserId;
-            }
-            
-            // Способ 4: Пробуем получить из hash
-            const hash = window.location.hash;
-            if (hash.includes('user_id=')) {
-                const match = hash.match(/user_id=([^&]*)/);
-                if (match) {
-                    telegramUserId = match[1];
-                    updateDebug('Found ID in hash: ' + telegramUserId);
-                    return telegramUserId;
-                }
-            }
-            
-            telegramUserId = "-1";
-            updateDebug('ERROR: User ID not found anywhere!');
-            return "-1";
-        }
-        
-        // Функция для отправки ID в Unity
-        function sendUserIdToUnity() {
-            if (!unityInstance) {
-                updateDebug('Unity not ready yet');
-                return false;
-            }
-            
-            updateDebug('Sending ID to Unity: ' + telegramUserId);
-            
-            // Пробуем все возможные варианты вызова
-            try {
-                // Вариант 1: Стандартный
-                unityInstance.SendMessage('SaveAndLoad', 'SetUserId', telegramUserId);
-                updateDebug('Called SendMessage to SaveAndLoad');
-                
-                // Вариант 2: Универсальный (будет искать любой объект)
-                unityInstance.SendMessage('', 'SetUserId', telegramUserId);
-                
-                // Вариант 3: Через JSON
-                unityInstance.SendMessage('', 'OnTelegramData', JSON.stringify({
-                    userId: telegramUserId,
-                    source: 'telegram'
-                }));
-                
-                return true;
-            } catch (e) {
-                updateDebug('Error sending to Unity: ' + e.message);
-                return false;
-            }
-        }
-        
-        // Запуск Unity
-        createUnityInstance(document.getElementById('unity-canvas'), {
-            dataUrl: "Build/telegram-game.data",
-            frameworkUrl: "Build/telegram-game.framework.js",
-            codeUrl: "Build/telegram-game.wasm",
-            streamingAssetsUrl: "StreamingAssets",
-            companyName: "DefaultCompany",
-            productName: "telegramTest",
-            productVersion: "1.0",
-        }).then((instance) => {
-            unityInstance = instance;
-            updateDebug('✅ Unity loaded successfully!');
-            
-            // Получаем ID
-            getTelegramUserId();
-            
-            // Пытаемся отправить несколько раз с задержками
-            setTimeout(() => sendUserIdToUnity(), 1000);
-            setTimeout(() => sendUserIdToUnity(), 3000);
-            setTimeout(() => sendUserIdToUnity(), 5000);
-            
-            // Добавляем кнопку для ручной отправки
-            const canvas = document.getElementById('unity-canvas');
-            canvas.addEventListener('click', function(e) {
-                if (e.clientY < 50 && e.clientX < 100) {
-                    updateDebug('Manual ID send triggered');
-                    telegramUserId = getTelegramUserId();
-                    sendUserIdToUnity();
-                }
-            });
-            
-        }).catch((error) => {
-            updateDebug('❌ Unity load error: ' + error);
-            console.error(error);
-        });
-        
-        // Глобальные функции для отладки
-        window.debugTelegram = function() {
-            updateDebug('=== DEBUG TELEGRAM ===');
-            updateDebug('Telegram object: ' + JSON.stringify(Telegram, null, 2));
-            updateDebug('WebApp: ' + JSON.stringify(Telegram?.WebApp, null, 2));
-            updateDebug('initDataUnsafe: ' + JSON.stringify(Telegram?.WebApp?.initDataUnsafe, null, 2));
-        };
-        
-        window.forceUserId = function(id) {
-            telegramUserId = id;
-            updateDebug('Forced ID to: ' + id);
-            sendUserIdToUnity();
-        };
+        var canvas = document.querySelector("#unity-canvas");
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+        canvas.style.position = "fixed";
+
+        document.body.style.textAlign = "left";
+
+      }
+
+      createUnityInstance(document.querySelector("#unity-canvas"), {
+        arguments: [],
+        dataUrl: "Build/telegram-game.data",
+        frameworkUrl: "Build/telegram-game.framework.js",
+        codeUrl: "Build/telegram-game.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "DefaultCompany",
+        productName: "telegramTest",
+        productVersion: "1.0",
+        // matchWebGLToCanvasSize: false, // Uncomment this to separately control WebGL canvas render size and DOM element size.
+        // devicePixelRatio: 1, // Uncomment this to override low DPI rendering on high DPI displays.
+      }).then((unityInstance) => {
+      }).catch((message) => {
+        alert(message);
+      });
     </script>
-</body>
+  </body>
 </html>
