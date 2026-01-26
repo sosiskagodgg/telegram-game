@@ -44,10 +44,10 @@
         const canvas = document.getElementById('gameCanvas');
         
         // Конфигурация Unity с правильными именами файлов
-        const unityConfig = {
-            dataUrl: "Build/telegram-game.data.gz",
-            frameworkUrl: "Build/telegram-game.framework.js.gz",
-            codeUrl: "Build/telegram-game.wasm.gz",
+const unityConfig = {
+    dataUrl: "Build/telegram-game.data",           // БЕЗ .gz
+    frameworkUrl: "Build/telegram-game.framework.js",  // БЕЗ .gz
+    codeUrl: "Build/telegram-game.wasm",           // БЕЗ .gz
             companyName: "DefaultCompany",
             productName: "Telegram Game",
             productVersion: "1.0",
